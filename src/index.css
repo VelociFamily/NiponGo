@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@layer theme {
+  :root {
+    --color-background: #f5f5f3;
+    --color-surface: #ffffff;
+    --color-text: #2c2c2c;
+    --color-text-muted: #6b7280;
+    --color-border: #e5e7eb;
+    
+    --color-indigo-600: #3a506b;
+    --color-indigo-800: #1c2541;
+    --color-indigo-900: #0b132b;
+    
+    --color-bamboo: #8a9a5b;
+    --color-cherry: #ffb7c5;
+    
+    /* Category Colors */
+    --color-cat-hotel: #8b5cf6; /* Violet */
+    --color-cat-train: #0ea5e9; /* Sky */
+    --color-cat-food: #f97316; /* Orange */
+    --color-cat-activity: #10b981; /* Emerald */
+  }
+}
+
+@layer base {
+  body {
+    background-color: var(--color-background);
+    color: var(--color-text);
+  }
+}
+
+@layer utilities {
+  .bg-seigaiha {
+    background-image: url("data:image/svg+xml,%3Csvg width='40' height='40' viewBox='0 0 40 40' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M20 20.5V18H0v-2h20v-2H0v-2h20v-2H0V8h20V6H0V4h20V2H0V0h22v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2V0h2v20h2v2H20v-1.5zM0 20h2v20H0V20zm4 0h2v20H4V20zm4 0h2v20H8V20zm4 0h2v20h-2V20zm4 0h2v20h-2V20zm4 0h2v20h-2V20zm4 4h20v2H24v-2zm0 4h20v2H24v-2zm0 4h20v2H24v-2zm0 4h20v2H24v-2z' fill='%23e5e7eb' fill-opacity='0.15' fill-rule='evenodd'/%3E%3C/svg%3E");
+  }
+
+  /* Print Styles */
+  @media print {
+    body {
+      background-color: white !important;
+      background-image: none !important;
+    }
+    .no-print {
+      display: none !important;
+    }
+  }
+
+  .print-mode-a .detailed-info {
+    display: none !important;
+  }
+
+  .print-mode-b .detailed-info {
+    display: block !important;
+  }
+}
