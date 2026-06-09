@@ -1,10 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import { useTripStore, type ItineraryBlock } from '../../store/useTripStore';
-import { eachDayOfInterval, parseISO, format } from 'date-fns';
+import { eachDayOfInterval, parseISO, format, subDays } from 'date-fns';
 import {
     DndContext,
     DragOverlay,
-    closestCorners,
+    closestCenter,
     KeyboardSensor,
     PointerSensor,
     useSensor,
@@ -21,7 +21,7 @@ import BlockModal from './BlockModal';
 import BlockCard from './BlockCard';
 
 const ItineraryView: React.FC = () => {
-    const { config, blocks, setBlocks, deleteBlock } = useTripStore();
+    const { config, blocks, flights } = useTripStore();
 
     const [activeBlock, setActiveBlock] = useState<ItineraryBlock | null>(null);
 
@@ -56,6 +56,30 @@ const ItineraryView: React.FC = () => {
         });
     }, [blocks]);
 
+    const allFlightLegs = useMemo(() => {
+        const legs: any[] = [];
+        (flights || []).forEach(f => {
+            legs.push(f);
+            if (f.returnFlight) {
+                legs.push({
+                    id: f.id + '_return',
+                    confirmationCode: f.confirmationCode,
+                    date: f.returnFlight.date,
+                    airline: f.returnFlight.airline,
+                    flightNumber: f.returnFlight.flightNumber,
+                    departureAirport: f.returnFlight.departureAirport,
+                    departureTime: f.returnFlight.departureTime,
+                    arrivalAirport: f.returnFlight.arrivalAirport,
+                    arrivalTime: f.returnFlight.arrivalTime,
+                    seat: f.returnFlight.seat,
+                    isOvernight: f.returnFlight.isOvernight,
+                    isReturn: true
+                });
+            }
+        });
+        return legs;
+    }, [flights]);
+
     const sensors = useSensors(
         useSensor(PointerSensor, {
             activationConstraint: {
@@ -83,12 +107,12 @@ const ItineraryView: React.FC = () => {
         const activeId = String(active.id);
         const overId = String(over.id);
 
-        // Find the containers
-        const activeBlock = blocks.find((b) => b.id === activeId);
+        const currentBlocks = useTripStore.getState().blocks;
+        const activeBlock = currentBlocks.find((b) => b.id === activeId);
         if (!activeBlock) return;
 
         const isOverColumn = over.data.current?.type === 'Column';
-        const overBlock = blocks.find((b) => b.id === overId);
+        const overBlock = currentBlocks.find((b) => b.id === overId);
 
         const activeColumnId = activeBlock.dayId;
         const overColumnId = isOverColumn ? overId : overBlock?.dayId;
@@ -98,10 +122,13 @@ const ItineraryView: React.FC = () => {
         }
 
         // Moving to a different column
-        setBlocks(
-            blocks.map((block) => {
+        const overColBlocks = currentBlocks.filter(b => b.dayId === overColumnId);
+        const maxOrder = overColBlocks.length > 0 ? Math.max(...overColBlocks.map(b => b.order)) : -1;
+
+        useTripStore.getState().setBlocks(
+            currentBlocks.map((block) => {
                 if (block.id === activeId) {
-                    return { ...block, dayId: overColumnId };
+                    return { ...block, dayId: overColumnId, order: maxOrder + 1 };
                 }
                 return block;
             })
@@ -115,7 +142,7 @@ const ItineraryView: React.FC = () => {
         if (!over) return;
 
         if (over.id === 'trash-zone') {
-            deleteBlock(String(active.id));
+            useTripStore.getState().deleteBlock(String(active.id));
             return;
         }
 
@@ -123,12 +150,13 @@ const ItineraryView: React.FC = () => {
         const overId = String(over.id);
 
         if (activeId !== overId) {
-            const activeItem = blocks.find((b) => b.id === activeId);
-            const overItem = blocks.find((b) => b.id === overId);
+            const currentBlocks = useTripStore.getState().blocks;
+            const activeItem = currentBlocks.find((b) => b.id === activeId);
+            const overItem = currentBlocks.find((b) => b.id === overId);
 
             if (activeItem && overItem && activeItem.dayId === overItem.dayId) {
                 // Swap or Reorder within the same column
-                const columnBlocks = blocks.filter(b => b.dayId === activeItem.dayId).sort((a, b) => a.order - b.order);
+                const columnBlocks = currentBlocks.filter(b => b.dayId === activeItem.dayId).sort((a, b) => a.order - b.order);
 
                 const oldIndex = columnBlocks.findIndex(b => b.id === activeId);
                 const newIndex = columnBlocks.findIndex(b => b.id === overId);
@@ -139,7 +167,7 @@ const ItineraryView: React.FC = () => {
                 newColumnBlocks.splice(newIndex, 0, removed);
 
                 // Update orders
-                const updatedBlocks = blocks.map(block => {
+                const updatedBlocks = currentBlocks.map(block => {
                     if (block.dayId === activeItem.dayId) {
                         const newOrder = newColumnBlocks.findIndex(b => b.id === block.id);
                         return { ...block, order: newOrder };
@@ -147,7 +175,7 @@ const ItineraryView: React.FC = () => {
                     return block;
                 });
 
-                setBlocks(updatedBlocks);
+                useTripStore.getState().setBlocks(updatedBlocks);
             }
         }
     };
@@ -177,13 +205,13 @@ const ItineraryView: React.FC = () => {
     return (
         <div className="h-[calc(100vh-8rem)] flex flex-col print:h-auto">
             <div className="flex-1 overflow-x-auto overflow-y-hidden pb-6 custom-scrollbar print:overflow-visible">
-                <DndContext
-                    sensors={sensors}
-                    collisionDetection={closestCorners}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDragEnd={handleDragEnd}
-                >
+                    <DndContext
+                        sensors={sensors}
+                        collisionDetection={closestCenter}
+                        onDragStart={handleDragStart}
+                        onDragOver={handleDragOver}
+                        onDragEnd={handleDragEnd}
+                    >
                     <div className="flex gap-6 h-full items-stretch print:flex-col print:gap-8">
                         {days.map((date) => {
                             const dayStr = format(date, 'yyyy-MM-dd');
@@ -198,6 +226,20 @@ const ItineraryView: React.FC = () => {
                                 return dayStr >= acc.dayId && dayStr <= acc.checkoutDate;
                             });
 
+                            const prevDate = subDays(date, 1);
+                            const prevDayStr = format(prevDate, 'yyyy-MM-dd');
+
+                            const topFlights = allFlightLegs.filter(f => {
+                                if (f.date === dayStr && !f.isReturn) return true;
+                                if (f.date === prevDayStr && f.isOvernight) return true;
+                                return false;
+                            });
+
+                            const bottomFlights = allFlightLegs.filter(f => {
+                                if (f.date === dayStr && f.isReturn) return true;
+                                return false;
+                            });
+
                             return (
                                 <DayColumn
                                     key={dayStr}
@@ -205,6 +247,8 @@ const ItineraryView: React.FC = () => {
                                     dateStr={displayDate}
                                     blocks={sortableDayBlocks}
                                     accommodations={tonightAccommodations}
+                                    flights={topFlights}
+                                    bottomFlights={bottomFlights}
                                     onAddBlock={handleAddBlock}
                                     onEditBlock={handleEditBlock}
                                 />

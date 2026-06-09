@@ -1,8 +1,9 @@
 import React from 'react';
 import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { type ItineraryBlock } from '../../store/useTripStore';
+import { type ItineraryBlock, type Flight } from '../../store/useTripStore';
 import BlockCard from './BlockCard';
+import FlightCard from './FlightCard';
 import { Plus, Bed } from 'lucide-react';
 
 
@@ -11,11 +12,13 @@ interface Props {
     dateStr: string;
     blocks: ItineraryBlock[];
     accommodations?: (ItineraryBlock & { _trackIndex?: number })[];
+    flights?: Flight[];
+    bottomFlights?: Flight[];
     onAddBlock: (dayId: string) => void;
     onEditBlock: (block: ItineraryBlock) => void;
 }
 
-const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, onAddBlock, onEditBlock }) => {
+const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, flights, bottomFlights, onAddBlock, onEditBlock }) => {
     const { setNodeRef } = useDroppable({
         id: dayId,
         data: { type: 'Column', dayId },
@@ -50,6 +53,10 @@ const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, on
                     ref={setNodeRef}
                     className="flex-1 flex flex-col gap-3 min-h-[150px]"
                 >
+                    {flights && flights.map(flight => (
+                        <FlightCard key={`flight-${flight.id}`} flight={flight} />
+                    ))}
+
                     <SortableContext
                         items={sortedBlocks.map(b => b.id)}
                         strategy={verticalListSortingStrategy}
@@ -64,7 +71,15 @@ const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, on
                         ))}
                     </SortableContext>
 
-                    {sortedBlocks.length === 0 && (
+                    {bottomFlights && bottomFlights.length > 0 && (
+                        <div className="mt-auto flex flex-col gap-3">
+                            {bottomFlights.map(flight => (
+                                <FlightCard key={`flight-bottom-${flight.id}`} flight={flight} />
+                            ))}
+                        </div>
+                    )}
+
+                    {sortedBlocks.length === 0 && (!flights || flights.length === 0) && (!bottomFlights || bottomFlights.length === 0) && (
                         <div className="h-full flex items-center justify-center border-2 border-dashed border-gray-300 rounded-lg text-gray-400 text-sm p-4 text-center print:hidden m-2">
                             Drop items here or click + to add an event
                         </div>

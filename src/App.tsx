@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useTripStore } from './store/useTripStore';
-import { Settings, Map, Wallet, Printer } from 'lucide-react';
+import { Settings, Map, Wallet, Printer, Plane } from 'lucide-react';
 
 import ConfigForm from './components/ConfigForm';
 import ItineraryView from './components/Itinerary/ItineraryView';
 import BudgetDashboard from './components/Budget/BudgetDashboard';
 import PrintLayout from './components/Print/PrintLayout';
+import FlightDashboard from './components/Flights/FlightDashboard';
 
-type Tab = 'config' | 'itinerary' | 'budget' | 'print';
+type Tab = 'config' | 'flights' | 'itinerary' | 'budget' | 'print';
 
 function App() {
   const config = useTripStore((state) => state.config);
@@ -32,6 +33,8 @@ function App() {
     switch (activeTab) {
       case 'config':
         return <ConfigForm />;
+      case 'flights':
+        return <FlightDashboard />;
       case 'itinerary':
         return <ItineraryView />;
       case 'budget':
@@ -62,6 +65,12 @@ function App() {
                   onClick={() => setActiveTab('config')}
                   icon={<Settings size={18} />}
                   label="Config"
+                />
+                <TabButton
+                  active={activeTab === 'flights'}
+                  onClick={() => setActiveTab('flights')}
+                  icon={<Plane size={18} />}
+                  label="Flights"
                 />
                 <TabButton
                   active={activeTab === 'itinerary'}

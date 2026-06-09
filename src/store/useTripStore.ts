@@ -31,15 +31,47 @@ export interface TripConfig {
     exchangeRate: number; // e.g., 1 USD to 150 JPY
 }
 
+export interface ReturnFlightDetails {
+    date: string;
+    airline: string;
+    flightNumber: string;
+    departureAirport: string;
+    departureTime: string;
+    arrivalAirport: string;
+    arrivalTime: string;
+    seat: string;
+    isOvernight?: boolean;
+}
+
+export interface Flight {
+    id: string;
+    confirmationCode: string;
+    date: string;
+    airline: string;
+    flightNumber: string;
+    departureAirport: string;
+    departureTime: string;
+    arrivalAirport: string;
+    arrivalTime: string;
+    seat: string;
+    isReturn?: boolean;
+    isOvernight?: boolean;
+    returnFlight?: ReturnFlightDetails;
+}
+
 interface TripState {
     config: TripConfig | null;
     blocks: ItineraryBlock[];
+    flights: Flight[];
     setConfig: (config: TripConfig) => void;
     addBlock: (block: Omit<ItineraryBlock, 'id'>) => void;
     updateBlock: (id: string, updates: Partial<ItineraryBlock>) => void;
     deleteBlock: (id: string) => void;
     setBlocks: (blocks: ItineraryBlock[]) => void;
     reorderBlocksInDay: (dayId: string, newOrderIds: string[]) => void;
+    addFlight: (flight: Omit<Flight, 'id'>) => void;
+    updateFlight: (id: string, updates: Partial<Flight>) => void;
+    deleteFlight: (id: string) => void;
 }
 
 export const useTripStore = create<TripState>()(
@@ -47,6 +79,7 @@ export const useTripStore = create<TripState>()(
         (set) => ({
             config: null,
             blocks: [],
+            flights: [],
 
             setConfig: (config) => set({ config }),
 
@@ -82,6 +115,23 @@ export const useTripStore = create<TripState>()(
 
                     return { blocks: [...otherBlocks, ...reorderedDayBlocks] };
                 }),
+                
+            addFlight: (flightData) =>
+                set((state) => ({
+                    flights: [...(state.flights || []), { ...flightData, id: uuidv4() }],
+                })),
+
+            updateFlight: (id, updates) =>
+                set((state) => ({
+                    flights: (state.flights || []).map((flight) =>
+                        flight.id === id ? { ...flight, ...updates } : flight
+                    ),
+                })),
+
+            deleteFlight: (id) =>
+                set((state) => ({
+                    flights: (state.flights || []).filter((flight) => flight.id !== id),
+                })),
         }),
         {
             name: 'trip-planner-storage', // name of the item in the storage (must be unique)
