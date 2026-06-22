@@ -6,7 +6,7 @@ import { Printer } from 'lucide-react';
 type PrintMode = 'A' | 'B';
 
 const PrintLayout: React.FC = () => {
-    const { config, blocks } = useTripStore();
+    const { config, blocks, currentPnr } = useTripStore();
     const [printMode, setPrintMode] = useState<PrintMode>('A');
 
     useEffect(() => {
@@ -86,6 +86,11 @@ const PrintLayout: React.FC = () => {
                         {config?.startDate && format(parseISO(config.startDate), 'MMMM do, yyyy')} —{' '}
                         {config?.endDate && format(parseISO(config.endDate), 'MMMM do, yyyy')}
                     </p>
+                    {currentPnr && (
+                        <p className="text-sm text-[#6b7280] mt-1 font-mono tracking-wider">
+                            Trip Code: {currentPnr}
+                        </p>
+                    )}
                 </div>
 
                 <div className="space-y-12">

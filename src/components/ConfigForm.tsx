@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useTripStore, type TripConfig } from '../store/useTripStore';
+import { Copy, Check } from 'lucide-react';
 
 const ConfigForm: React.FC = () => {
-    const { config, setConfig } = useTripStore();
+    const { config, currentPnr, tripId, setConfig } = useTripStore();
     const [formData, setFormData] = useState<TripConfig>({
         name: 'My Japan Trip',
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
         exchangeRate: 150,
     });
+    const [pnrCopied, setPnrCopied] = useState(false);
 
     useEffect(() => {
         if (config) {
@@ -35,12 +37,49 @@ const ConfigForm: React.FC = () => {
         setConfig(formData);
     };
 
+    const handleCopyPnr = async () => {
+        if (!currentPnr) return;
+        try {
+            await navigator.clipboard.writeText(currentPnr);
+            setPnrCopied(true);
+            setTimeout(() => setPnrCopied(false), 2000);
+        } catch {
+            // Fallback
+        }
+    };
+
     return (
         <div className="max-w-2xl mx-auto mt-10 p-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
             <div className="text-center mb-8">
                 <h2 className="text-3xl font-bold text-[#1c2541] mb-2 font-serif">Trip Configuration</h2>
                 <p className="text-[#6b7280]">Set up the foundational details for your journey.</p>
             </div>
+
+            {/* PNR Share Card — shown after trip is created */}
+            {currentPnr && tripId && (
+                <div className="mb-8 bg-[#8a9a5b]/10 border border-[#8a9a5b]/20 rounded-xl p-5">
+                    <p className="text-sm font-medium text-[#1c2541] mb-2">Share this code with your family:</p>
+                    <div className="flex items-center justify-center gap-3">
+                        <span className="font-mono text-3xl font-bold text-[#1c2541] tracking-[0.4em]">
+                            {currentPnr}
+                        </span>
+                        <button
+                            onClick={handleCopyPnr}
+                            className="p-2 rounded-lg hover:bg-[#8a9a5b]/20 transition-colors"
+                            title="Copy trip code"
+                        >
+                            {pnrCopied ? (
+                                <Check size={20} className="text-green-600" />
+                            ) : (
+                                <Copy size={20} className="text-[#6b7280]" />
+                            )}
+                        </button>
+                    </div>
+                    <p className="text-xs text-[#6b7280] text-center mt-2">
+                        Anyone with this code can view and edit the trip.
+                    </p>
+                </div>
+            )}
 
             <form onSubmit={handleSubmit} className="space-y-6">
                 <div>
