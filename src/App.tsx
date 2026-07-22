@@ -38,6 +38,9 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [!!config]);
 
+  const displayCurrency = useTripStore((state) => state.displayCurrency);
+  const setDisplayCurrency = useTripStore((state) => state.setDisplayCurrency);
+
   const handleCopyPnr = async () => {
     if (!currentPnr) return;
     try {
@@ -150,6 +153,21 @@ function App() {
                     <Copy size={14} className="text-[#6b7280] group-hover:text-[#1c2541] transition-colors" />
                   )}
                 </button>
+              )}
+
+              {/* Currency Selector */}
+              {config && (
+                <div className="flex items-center gap-1 bg-[#1c2541]/5 hover:bg-[#1c2541]/10 rounded-lg px-2.5 py-1.5 border border-gray-200/40 shadow-sm transition-all">
+                  <span className="text-xs text-[#6b7280] font-medium select-none hidden xs:inline">Currency:</span>
+                  <select
+                    value={displayCurrency}
+                    onChange={(e) => setDisplayCurrency(e.target.value as 'USD' | 'JPY')}
+                    className="bg-transparent text-xs font-bold text-[#1c2541] outline-none cursor-pointer"
+                  >
+                    <option value="JPY">¥ JPY</option>
+                    <option value="USD">$ USD</option>
+                  </select>
+                </div>
               )}
 
               {/* Leave Trip */}

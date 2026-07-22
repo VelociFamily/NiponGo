@@ -11,7 +11,9 @@ interface Props {
 }
 
 const BlockModal: React.FC<Props> = ({ isOpen, onClose, dayId, existingBlock }) => {
-    const { addBlock, updateBlock, blocks } = useTripStore();
+    const { addBlock, updateBlock, blocks, config } = useTripStore();
+    const exchangeRate = config?.exchangeRate || 150;
+    const [isKidsPriceManuallyEdited, setIsKidsPriceManuallyEdited] = useState(false);
 
     const [formData, setFormData] = useState<Partial<ItineraryBlock>>({
         type: 'Activity',
@@ -25,6 +27,8 @@ const BlockModal: React.FC<Props> = ({ isOpen, onClose, dayId, existingBlock }) 
         address: '',
         googleMapsUrl: '',
         phoneNumber: '',
+        hasKidsPrice: false,
+        kidsCostInBaseCurrency: undefined,
     });
 
     useEffect(() => {
@@ -41,7 +45,10 @@ const BlockModal: React.FC<Props> = ({ isOpen, onClose, dayId, existingBlock }) 
                 address: existingBlock.address || '',
                 googleMapsUrl: existingBlock.googleMapsUrl || '',
                 phoneNumber: existingBlock.phoneNumber || '',
+                hasKidsPrice: existingBlock.hasKidsPrice || false,
+                kidsCostInBaseCurrency: existingBlock.kidsCostInBaseCurrency,
             });
+            setIsKidsPriceManuallyEdited(existingBlock.hasKidsPrice ? true : false);
         } else {
             setFormData({
                 type: 'Activity',
@@ -55,7 +62,10 @@ const BlockModal: React.FC<Props> = ({ isOpen, onClose, dayId, existingBlock }) 
                 address: '',
                 googleMapsUrl: '',
                 phoneNumber: '',
+                hasKidsPrice: false,
+                kidsCostInBaseCurrency: undefined,
             });
+            setIsKidsPriceManuallyEdited(false);
         }
     }, [existingBlock, isOpen]);
 
@@ -64,7 +74,20 @@ const BlockModal: React.FC<Props> = ({ isOpen, onClose, dayId, existingBlock }) 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
         const { name, value } = e.target;
         setFormData((prev) => {
-            const updates: any = { [name]: name === 'costInBaseCurrency' ? (value ? Number(value) : 0) : value };
+            const updates: any = { 
+                [name]: (name === 'costInBaseCurrency' || name === 'kidsCostInBaseCurrency') 
+                    ? (value ? Number(value) : 0) 
+                    : value 
+            };
+
+            if (name === 'costInBaseCurrency' && prev.hasKidsPrice && !isKidsPriceManuallyEdited) {
+                const adultPrice = value ? Number(value) : 0;
+                updates.kidsCostInBaseCurrency = Math.round(adultPrice / 2);
+            }
+
+            if (name === 'kidsCostInBaseCurrency') {
+                setIsKidsPriceManuallyEdited(true);
+            }
 
             if (name === 'type') {
                 if (value === 'Accommodation') {
@@ -97,6 +120,21 @@ const BlockModal: React.FC<Props> = ({ isOpen, onClose, dayId, existingBlock }) 
                 }
             }
 
+            return { ...prev, ...updates };
+        });
+    };
+
+    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const checked = e.target.checked;
+        setFormData((prev) => {
+            const updates: any = { hasKidsPrice: checked };
+            if (checked) {
+                const adultPrice = prev.costInBaseCurrency || 0;
+                updates.kidsCostInBaseCurrency = Math.round(adultPrice / 2);
+                setIsKidsPriceManuallyEdited(false);
+            } else {
+                updates.kidsCostInBaseCurrency = undefined;
+            }
             return { ...prev, ...updates };
         });
     };
@@ -350,33 +388,94 @@ const BlockModal: React.FC<Props> = ({ isOpen, onClose, dayId, existingBlock }) 
                         />
                     </div>
 
-                    <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-1">Cost (in Yen ¥)</label>
-                        <input
-                            type="number"
-                            name="costInBaseCurrency"
-                            value={formData.costInBaseCurrency || ''}
-                            onChange={handleChange}
-                            min="0"
-                            placeholder="0"
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8a9a5b] focus:border-transparent outline-none"
-                        />
+                    <div className="space-y-3">
+                        <div>
+                            <div className="flex justify-between items-baseline mb-1">
+                                <label className="block text-sm font-medium text-gray-700">Cost (in Yen ¥)</label>
+                                {formData.costInBaseCurrency !== undefined && formData.costInBaseCurrency > 0 && (
+                                    <span className="text-xs text-[#8a9a5b] font-semibold">
+                                        ~ ${(formData.costInBaseCurrency / exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                    </span>
+                                )}
+                            </div>
+                            <input
+                                type="number"
+                                name="costInBaseCurrency"
+                                value={formData.costInBaseCurrency || ''}
+                                onChange={handleChange}
+                                min="0"
+                                placeholder="0"
+                                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8a9a5b] focus:border-transparent outline-none"
+                            />
+                        </div>
+
+                        <div className="flex items-center gap-2 py-1">
+                            <input
+                                type="checkbox"
+                                id="hasKidsPrice"
+                                name="hasKidsPrice"
+                                checked={!!formData.hasKidsPrice}
+                                onChange={handleCheckboxChange}
+                                className="h-4 w-4 text-[#8a9a5b] focus:ring-[#8a9a5b] border-gray-300 rounded cursor-pointer"
+                            />
+                            <label htmlFor="hasKidsPrice" className="text-sm font-medium text-gray-700 select-none cursor-pointer">
+                                Has different kid's price
+                            </label>
+                        </div>
+
+                        {formData.hasKidsPrice && (
+                            <div className="animate-in fade-in slide-in-from-top-2 duration-200">
+                                <div className="flex justify-between items-baseline mb-1">
+                                    <label className="block text-sm font-medium text-gray-700">Kid's Cost (in Yen ¥)</label>
+                                    {formData.kidsCostInBaseCurrency !== undefined && formData.kidsCostInBaseCurrency > 0 && (
+                                        <span className="text-xs text-[#8a9a5b] font-semibold">
+                                            ~ ${(formData.kidsCostInBaseCurrency / exchangeRate).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD
+                                        </span>
+                                    )}
+                                </div>
+                                <input
+                                    type="number"
+                                    name="kidsCostInBaseCurrency"
+                                    value={formData.kidsCostInBaseCurrency !== undefined ? formData.kidsCostInBaseCurrency : ''}
+                                    onChange={handleChange}
+                                    min="0"
+                                    placeholder="0"
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8a9a5b] focus:border-transparent outline-none"
+                                />
+                            </div>
+                        )}
                     </div>
 
-                    <div className="pt-4 flex justify-end gap-2 border-t border-gray-100">
-                        <button
-                            type="button"
-                            onClick={onClose}
-                            className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="px-4 py-2 text-sm font-medium text-white bg-[#8a9a5b] hover:bg-[#728247] rounded-lg transition-colors"
-                        >
-                            Save Event
-                        </button>
+                    <div className="pt-4 flex justify-between gap-2 border-t border-gray-100">
+                        {existingBlock ? (
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    useTripStore.getState().deleteBlock(existingBlock.id);
+                                    onClose();
+                                }}
+                                className="px-4 py-2 text-sm font-medium text-red-600 hover:text-red-800 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                            >
+                                Delete
+                            </button>
+                        ) : (
+                            <div></div>
+                        )}
+                        <div className="flex gap-2">
+                            <button
+                                type="button"
+                                onClick={onClose}
+                                className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-800 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="px-4 py-2 text-sm font-medium text-white bg-[#8a9a5b] hover:bg-[#728247] rounded-lg transition-colors"
+                            >
+                                Save Event
+                            </button>
+                        </div>
                     </div>
                 </form>
             </div>

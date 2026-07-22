@@ -1,11 +1,11 @@
 import React, { useMemo } from 'react';
 import { useTripStore, type BlockCategory } from '../../store/useTripStore';
 import { Bed, Train, Utensils, MapPin } from 'lucide-react';
+import { useFormatPrice } from '../../hooks/useFormatPrice';
 
 const BudgetDashboard: React.FC = () => {
     const { config, blocks } = useTripStore();
-
-    const exchangeRate = config?.exchangeRate || 1;
+    const { formatPrice, displayCurrency, exchangeRate } = useFormatPrice();
 
     const { totals, grandTotal } = useMemo(() => {
         const defaultTotals: Record<BlockCategory, number> = {
@@ -15,21 +15,24 @@ const BudgetDashboard: React.FC = () => {
             Activity: 0,
         };
 
+        const adultsCount = config?.adults ?? 1;
+        const kidsCount = config?.children ?? 0;
+
         let grand = 0;
 
         blocks.forEach((block) => {
             if (block.costInBaseCurrency) {
-                defaultTotals[block.type] += block.costInBaseCurrency;
-                grand += block.costInBaseCurrency;
+                const kidPrice = block.hasKidsPrice 
+                    ? (block.kidsCostInBaseCurrency ?? Math.round(block.costInBaseCurrency / 2)) 
+                    : block.costInBaseCurrency;
+                const blockTotal = (block.costInBaseCurrency * adultsCount) + (kidPrice * kidsCount);
+                defaultTotals[block.type] += blockTotal;
+                grand += blockTotal;
             }
         });
 
         return { totals: defaultTotals, grandTotal: grand };
-    }, [blocks]);
-
-    const convertCost = (yenAmount: number) => {
-        return (yenAmount / exchangeRate).toFixed(2);
-    };
+    }, [blocks, config]);
 
     const getIcon = (type: BlockCategory, size: number = 24) => {
         switch (type) {
@@ -51,24 +54,42 @@ const BudgetDashboard: React.FC = () => {
         { type: 'Activity', label: 'Activities', colorClass: 'text-[#10b981]', bgClass: 'bg-[#10b981]' },
     ];
 
+    const formatSecondaryTotal = (yenVal: number) => {
+        if (displayCurrency === 'JPY') {
+            const usdVal = yenVal / exchangeRate;
+            return `$${usdVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+        } else {
+            return `¥${yenVal.toLocaleString()}`;
+        }
+    };
+
     return (
         <div className="max-w-4xl mx-auto space-y-8">
             <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-200 p-8 flex flex-col md:flex-row items-center justify-between gap-6">
                 <div>
                     <h2 className="text-3xl font-bold text-[#1c2541] mb-2 font-serif">Trip Budget</h2>
-                    <p className="text-[#6b7280]">Keep track of your estimated costs and spending.</p>
+                    <p className="text-[#6b7280] mb-2">Keep track of your estimated costs and spending.</p>
+                    <div className="inline-flex items-center gap-2 px-3 py-1 bg-[#8a9a5b]/10 border border-[#8a9a5b]/25 rounded-full text-xs text-[#728247] font-medium">
+                        <span>{config?.adults ?? 1} { (config?.adults ?? 1) === 1 ? 'Adult' : 'Adults' }</span>
+                        {config?.children ? (
+                            <>
+                                <span className="w-1.5 h-1.5 rounded-full bg-[#8a9a5b]/40"></span>
+                                <span>{config.children} { config.children === 1 ? 'Child' : 'Children' }</span>
+                            </>
+                        ) : null}
+                    </div>
                 </div>
 
                 <div className="bg-[#f5f5f3] rounded-lg p-6 text-right min-w-[200px] border border-gray-200 shadow-inner">
                     <p className="text-sm font-medium text-gray-500 uppercase tracking-widest mb-1">Grand Total</p>
                     <div className="text-4xl font-bold text-[#1c2541]">
-                        ¥{grandTotal.toLocaleString()}
+                        {formatPrice(grandTotal)}
                     </div>
                     <div className="text-lg font-medium text-[#8a9a5b] mt-1">
-                        ~ {convertCost(grandTotal)} (Home)
+                        ~ {formatSecondaryTotal(grandTotal)}
                     </div>
                     <div className="text-xs text-gray-400 mt-2">
-                        Rate: 1 = ¥{exchangeRate}
+                        Rate: 1 USD = ¥{exchangeRate}
                     </div>
                 </div>
             </div>
@@ -91,10 +112,10 @@ const BudgetDashboard: React.FC = () => {
 
                                 <div className="flex items-baseline gap-2 mb-3">
                                     <span className="text-2xl font-bold text-[#1c2541]">
-                                        ¥{yenTotal.toLocaleString()}
+                                        {formatPrice(yenTotal)}
                                     </span>
                                     <span className="text-sm font-medium text-[#8a9a5b]">
-                                        ({convertCost(yenTotal)})
+                                        ({formatSecondaryTotal(yenTotal)})
                                     </span>
                                 </div>
 

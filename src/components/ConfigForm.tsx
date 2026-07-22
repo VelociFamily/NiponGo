@@ -9,6 +9,8 @@ const ConfigForm: React.FC = () => {
         startDate: new Date().toISOString().split('T')[0],
         endDate: new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
         exchangeRate: 150,
+        adults: 1,
+        children: 0,
     });
     const [pnrCopied, setPnrCopied] = useState(false);
 
@@ -23,7 +25,7 @@ const ConfigForm: React.FC = () => {
         setFormData((prev) => {
             const next = {
                 ...prev,
-                [name]: name === 'exchangeRate' ? Number(value) : value,
+                [name]: (name === 'exchangeRate' || name === 'adults' || name === 'children') ? Number(value) : value,
             };
             if (name === 'startDate') {
                 next.endDate = value;
@@ -125,6 +127,40 @@ const ConfigForm: React.FC = () => {
                             value={formData.endDate}
                             onChange={handleChange}
                             required
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8a9a5b] focus:border-transparent outline-none transition-all"
+                        />
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div>
+                        <label htmlFor="adults" className="block text-sm font-medium text-[#2c2c2c] mb-1">
+                            Number of Adults
+                        </label>
+                        <input
+                            type="number"
+                            id="adults"
+                            name="adults"
+                            value={formData.adults}
+                            onChange={handleChange}
+                            required
+                            min="1"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8a9a5b] focus:border-transparent outline-none transition-all"
+                        />
+                    </div>
+
+                    <div>
+                        <label htmlFor="children" className="block text-sm font-medium text-[#2c2c2c] mb-1">
+                            Number of Children
+                        </label>
+                        <input
+                            type="number"
+                            id="children"
+                            name="children"
+                            value={formData.children}
+                            onChange={handleChange}
+                            required
+                            min="0"
                             className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8a9a5b] focus:border-transparent outline-none transition-all"
                         />
                     </div>

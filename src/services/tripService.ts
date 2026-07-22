@@ -14,6 +14,8 @@ interface DbTrip {
     exchange_rate: number;
     created_at: string;
     updated_at: string;
+    adults: number;
+    children: number;
 }
 
 interface DbBlock {
@@ -33,6 +35,8 @@ interface DbBlock {
     google_maps_url: string | null;
     phone_number: string | null;
     website_url: string | null;
+    has_kids_price: boolean;
+    kids_cost_in_base_currency: number | null;
 }
 
 interface DbFlight {
@@ -62,6 +66,8 @@ function dbTripToConfig(row: DbTrip): TripConfig {
         startDate: row.start_date,
         endDate: row.end_date,
         exchangeRate: Number(row.exchange_rate),
+        adults: row.adults,
+        children: row.children,
     };
 }
 
@@ -72,6 +78,8 @@ function configToDbTrip(config: TripConfig, pnrCode: string): Omit<DbTrip, 'id' 
         start_date: config.startDate,
         end_date: config.endDate,
         exchange_rate: config.exchangeRate,
+        adults: config.adults,
+        children: config.children,
     };
 }
 
@@ -81,7 +89,7 @@ function dbBlockToBlock(row: DbBlock): ItineraryBlock {
         dayId: row.day_id,
         type: row.type as ItineraryBlock['type'],
         title: row.title,
-        details: row.details,
+        details: row.details || '',
         costInBaseCurrency: Number(row.cost_in_base_currency),
         startTime: row.start_time ?? undefined,
         endTime: row.end_time ?? undefined,
@@ -92,6 +100,8 @@ function dbBlockToBlock(row: DbBlock): ItineraryBlock {
         googleMapsUrl: row.google_maps_url ?? undefined,
         phoneNumber: row.phone_number ?? undefined,
         websiteUrl: row.website_url ?? undefined,
+        hasKidsPrice: row.has_kids_price,
+        kidsCostInBaseCurrency: row.kids_cost_in_base_currency !== null ? Number(row.kids_cost_in_base_currency) : undefined,
     };
 }
 
@@ -101,7 +111,7 @@ function blockToDbInsert(tripId: string, block: Omit<ItineraryBlock, 'id'>): Omi
         day_id: block.dayId,
         type: block.type,
         title: block.title,
-        details: block.details,
+        details: block.details || '',
         cost_in_base_currency: block.costInBaseCurrency,
         start_time: block.startTime ?? null,
         end_time: block.endTime ?? null,
@@ -112,6 +122,8 @@ function blockToDbInsert(tripId: string, block: Omit<ItineraryBlock, 'id'>): Omi
         google_maps_url: block.googleMapsUrl ?? null,
         phone_number: block.phoneNumber ?? null,
         website_url: block.websiteUrl ?? null,
+        has_kids_price: block.hasKidsPrice ?? false,
+        kids_cost_in_base_currency: block.kidsCostInBaseCurrency ?? null,
     };
 }
 
@@ -131,6 +143,8 @@ function blockToDbUpdate(updates: Partial<ItineraryBlock>): Record<string, unkno
     if (updates.googleMapsUrl !== undefined) db.google_maps_url = updates.googleMapsUrl || null;
     if (updates.phoneNumber !== undefined) db.phone_number = updates.phoneNumber || null;
     if (updates.websiteUrl !== undefined) db.website_url = updates.websiteUrl || null;
+    if (updates.hasKidsPrice !== undefined) db.has_kids_price = updates.hasKidsPrice;
+    if (updates.kidsCostInBaseCurrency !== undefined) db.kids_cost_in_base_currency = updates.kidsCostInBaseCurrency ?? null;
     return db;
 }
 
@@ -241,6 +255,8 @@ export async function updateTripConfig(tripId: string, config: TripConfig) {
             start_date: config.startDate,
             end_date: config.endDate,
             exchange_rate: config.exchangeRate,
+            adults: config.adults,
+            children: config.children,
         })
         .eq('id', tripId);
 

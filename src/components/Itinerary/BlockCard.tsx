@@ -2,8 +2,9 @@ import React from 'react';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { Bed, Train, Utensils, MapPin, GripVertical, Map as MapIcon, Phone } from 'lucide-react';
-import { type ItineraryBlock, type BlockCategory } from '../../store/useTripStore';
+import { type ItineraryBlock, type BlockCategory, useTripStore } from '../../store/useTripStore';
 import { parseISO, format, differenceInCalendarDays } from 'date-fns';
+import { useFormatPrice } from '../../hooks/useFormatPrice';
 
 interface Props {
     block: ItineraryBlock;
@@ -62,8 +63,18 @@ const formatTime = (timeStr?: string) => {
     return timeStr; // Just returning as-is for now, could convert 24h to 12h
 };
 
-const BlockCard: React.FC<Props> = ({ block, onClick, baseCurrency, isStatic, cardId }) => {
-    const idToUse = cardId || block.id;
+const BlockCard: React.FC<Props> = ({ block, onClick, baseCurrency: _baseCurrency, isStatic = false, cardId }) => {
+    const { config } = useTripStore();
+    const { formatPrice } = useFormatPrice();
+    const adultsCount = config?.adults ?? 1;
+    const kidsCount = config?.children ?? 0;
+    const totalTravelers = adultsCount + kidsCount;
+
+    const kidPrice = block.hasKidsPrice
+        ? (block.kidsCostInBaseCurrency ?? Math.round(block.costInBaseCurrency / 2))
+        : block.costInBaseCurrency;
+    const totalCost = (block.costInBaseCurrency * adultsCount) + (kidPrice * kidsCount);
+
     const {
         attributes,
         listeners,
@@ -72,7 +83,7 @@ const BlockCard: React.FC<Props> = ({ block, onClick, baseCurrency, isStatic, ca
         transition,
         isDragging,
     } = useSortable({
-        id: idToUse,
+        id: cardId || block.id,
         data: { type: 'Block', block },
         disabled: isStatic
     });
@@ -194,9 +205,22 @@ const BlockCard: React.FC<Props> = ({ block, onClick, baseCurrency, isStatic, ca
                         </div>
                     )}
 
-                    {block.costInBaseCurrency > 0 && (
-                        <div className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-100 inline-block px-1.5 py-0.5 rounded mt-0.5">
-                            {baseCurrency}{block.costInBaseCurrency.toLocaleString()}
+                    {(block.costInBaseCurrency > 0 || (block.hasKidsPrice && block.kidsCostInBaseCurrency !== undefined)) && (
+                        <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
+                            <div className="text-xs font-semibold text-gray-700 bg-gray-50 border border-gray-100 inline-block px-1.5 py-0.5 rounded">
+                                {formatPrice(block.costInBaseCurrency)}
+                                {totalTravelers > 1 && <span className="text-gray-400 font-normal ml-0.5">/ adult</span>}
+                                {block.hasKidsPrice && (
+                                    <span className="text-gray-500 font-normal ml-1.5">
+                                        (Kids: {formatPrice(kidPrice)})
+                                    </span>
+                                )}
+                            </div>
+                            {totalTravelers > 1 && (
+                                <div className="text-xs font-bold text-[#728247] bg-[#8a9a5b]/10 border border-[#8a9a5b]/20 inline-block px-1.5 py-0.5 rounded">
+                                    Total: {formatPrice(totalCost)}
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>

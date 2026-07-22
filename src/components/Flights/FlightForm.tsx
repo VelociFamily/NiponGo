@@ -93,7 +93,8 @@ const FlightForm: React.FC<FlightFormProps> = ({ onClose, initialFlight }) => {
                 departureAirport: formData.arrivalAirport,
                 arrivalAirport: formData.departureAirport,
                 airline: formData.airline,
-                confirmationCode: formData.confirmationCode
+                confirmationCode: formData.confirmationCode,
+                date: formData.date
             }));
         }
     };
@@ -143,36 +144,36 @@ const FlightForm: React.FC<FlightFormProps> = ({ onClose, initialFlight }) => {
                 <input required type="text" name="confirmationCode" value={formData.confirmationCode} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. CBRWKS" />
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                     <input required type="date" name="date" value={formData.date} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" />
                 </div>
-                <div>
+                <div className="md:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Airline *</label>
                     <input required type="text" name="airline" value={formData.airline} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. AA or American Airlines" />
                 </div>
-                <div>
+                <div className="md:col-span-1">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Flight Number *</label>
                     <input required type="text" name="flightNumber" value={formData.flightNumber} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 61" />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Departure Airport *</label>
                     <input required type="text" name="departureAirport" value={formData.departureAirport} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. DFW Dallas/Fort Worth" />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Departure Time *</label>
                     <input required type="text" name="departureTime" value={formData.departureTime} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 11:10 AM" />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Airport *</label>
                     <input required type="text" name="arrivalAirport" value={formData.arrivalAirport} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. NRT Tokyo Narita" />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Time *</label>
                     <input required type="text" name="arrivalTime" value={formData.arrivalTime} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 3:00 PM" />
                 </div>
-                <div>
+                <div className="md:col-span-2">
                     <label className="block text-sm font-medium text-gray-700 mb-1">Seat</label>
                     <input type="text" name="seat" value={formData.seat} onChange={handleChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 24K" />
                 </div>
@@ -206,36 +207,36 @@ const FlightForm: React.FC<FlightFormProps> = ({ onClose, initialFlight }) => {
             {isRoundtrip && (
                 <div className="pt-4 border-t border-gray-200 mt-4 space-y-4">
                     <h4 className="text-lg font-bold text-[#1c2541]">Return Flight Details</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                        <div>
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Date *</label>
                             <input required type="date" name="date" value={returnFormData.date} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" />
                         </div>
-                        <div>
+                        <div className="md:col-span-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Airline *</label>
                             <input required type="text" name="airline" value={returnFormData.airline} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. AA or American Airlines" />
                         </div>
-                        <div>
+                        <div className="md:col-span-1">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Flight Number *</label>
                             <input required type="text" name="flightNumber" value={returnFormData.flightNumber} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 62" />
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Departure Airport *</label>
                             <input required type="text" name="departureAirport" value={returnFormData.departureAirport} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. NRT Tokyo Narita" />
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Departure Time *</label>
                             <input required type="text" name="departureTime" value={returnFormData.departureTime} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 5:30 PM" />
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Airport *</label>
                             <input required type="text" name="arrivalAirport" value={returnFormData.arrivalAirport} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. DFW Dallas/Fort Worth" />
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Arrival Time *</label>
                             <input required type="text" name="arrivalTime" value={returnFormData.arrivalTime} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 3:00 PM" />
                         </div>
-                        <div>
+                        <div className="md:col-span-2">
                             <label className="block text-sm font-medium text-gray-700 mb-1">Seat</label>
                             <input type="text" name="seat" value={returnFormData.seat} onChange={handleReturnChange} className="w-full border-gray-300 rounded-md shadow-sm p-2 border focus:ring-blue-500 focus:border-blue-500" placeholder="e.g. 24K" />
                         </div>

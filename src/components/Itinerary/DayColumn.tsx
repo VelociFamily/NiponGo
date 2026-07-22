@@ -1,10 +1,89 @@
 import React from 'react';
-import { useDroppable } from '@dnd-kit/core';
+import { useDroppable, useDraggable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { type ItineraryBlock, type Flight } from '../../store/useTripStore';
+import { CSS } from '@dnd-kit/utilities';
+import { type ItineraryBlock, type Flight, useTripStore } from '../../store/useTripStore';
 import BlockCard from './BlockCard';
 import FlightCard from './FlightCard';
 import { Plus, Bed } from 'lucide-react';
+import { useFormatPrice } from '../../hooks/useFormatPrice';
+
+const AccommodationSegment: React.FC<{
+    acc: ItineraryBlock & { _trackIndex?: number };
+    trackIndex: number;
+    isCheckIn: boolean;
+    isCheckOut: boolean;
+    isMiddle: boolean;
+    dayId: string;
+    onEditBlock: (block: ItineraryBlock) => void;
+}> = ({ acc, trackIndex, isCheckIn, isCheckOut, isMiddle, dayId, onEditBlock }) => {
+    const { config } = useTripStore();
+    const { formatPrice } = useFormatPrice();
+    const adultsCount = config?.adults ?? 1;
+    const kidsCount = config?.children ?? 0;
+    const kidPrice = acc.hasKidsPrice
+        ? (acc.kidsCostInBaseCurrency ?? Math.round(acc.costInBaseCurrency / 2))
+        : acc.costInBaseCurrency;
+    const totalCost = (acc.costInBaseCurrency * adultsCount) + (kidPrice * kidsCount);
+
+    const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+        id: `${acc.id}-seg-${dayId}`,
+        data: { type: 'Block', block: acc },
+    });
+
+    const style = {
+        transform: CSS.Translate.toString(transform),
+        opacity: isDragging ? 0.5 : undefined,
+        top: trackIndex * 88,
+        zIndex: isDragging ? 50 : (isCheckIn || isCheckOut ? 20 : 10),
+    };
+
+    if (isCheckIn && isCheckOut) {
+        return (
+            <div ref={setNodeRef} {...listeners} {...attributes} onClick={() => onEditBlock(acc)} style={style} className="absolute left-[15%] right-[15%] h-[76px] bg-white border border-gray-200 border-l-[4px] border-l-[#8b5cf6] rounded-xl cursor-pointer shadow-sm hover:shadow-md transition-shadow flex flex-col justify-center px-3 overflow-hidden">
+                <div className="text-sm font-bold text-[#1c2541] truncate text-center">{acc.title}</div>
+            </div>
+        );
+    }
+
+    if (isCheckIn) {
+        return (
+            <div ref={setNodeRef} {...listeners} {...attributes} onClick={() => onEditBlock(acc)} style={style} className="absolute right-[-24px] left-[52%] h-[76px] bg-white border-y border-gray-200 border-l-[4px] border-l-[#8b5cf6] border-r-0 rounded-l-xl cursor-pointer hover:bg-gray-50 transition-colors flex flex-col justify-center pl-3 pr-6 overflow-hidden">
+                <div className="flex items-center gap-1.5 mb-1">
+                    <Bed size={14} className="text-[#8b5cf6] shrink-0" />
+                    <span className="text-sm font-bold text-[#1c2541] truncate">{acc.title}</span>
+                </div>
+                <div className="flex flex-wrap items-center justify-between text-xs">
+                    <span className="text-gray-500 font-medium whitespace-nowrap">{acc.startTime || '16:00'}</span>
+                    {totalCost > 0 && (
+                        <span className="font-semibold text-[#8b5cf6] ml-2">{formatPrice(totalCost)}</span>
+                    )}
+                </div>
+            </div>
+        );
+    }
+
+    if (isCheckOut) {
+        return (
+            <div ref={setNodeRef} {...listeners} {...attributes} onClick={() => onEditBlock(acc)} style={style} className="absolute left-[-24px] right-[52%] h-[76px] bg-white border-y border-gray-200 border-r border-r-gray-200 border-l-0 rounded-r-xl cursor-pointer hover:bg-gray-50 transition-colors flex flex-col items-center justify-center px-2 overflow-hidden">
+                <div className="text-[10px] text-[#8b5cf6] font-bold mb-0.5 uppercase tracking-widest">OUT</div>
+                <div className="text-xs text-gray-500 font-medium truncate">{acc.endTime || '10:00'}</div>
+            </div>
+        );
+    }
+
+    if (isMiddle) {
+        return (
+            <div ref={setNodeRef} {...listeners} {...attributes} onClick={() => onEditBlock(acc)} style={style} className="absolute left-[-24px] right-[-24px] h-[76px] bg-white border-y border-gray-200 border-x-0 cursor-pointer hover:bg-gray-50 transition-colors flex flex-col justify-center px-4 overflow-hidden">
+                <div className="text-center text-[#8b5cf6]/30 font-bold tracking-widest uppercase text-xs truncate">
+                    {acc.title}
+                </div>
+            </div>
+        );
+    }
+
+    return null;
+};
 
 
 interface Props {
@@ -95,51 +174,18 @@ const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, fl
                         const isCheckOut = acc.checkoutDate === dayId;
                         const isMiddle = !isCheckIn && !isCheckOut;
 
-                        if (isCheckIn && isCheckOut) {
-                            return (
-                                <div key={acc.id} onClick={() => onEditBlock(acc)} style={{ top: trackIndex * 88 }} className="absolute left-[15%] right-[15%] h-[76px] bg-white border border-gray-200 border-l-[4px] border-l-[#8b5cf6] rounded-xl cursor-pointer shadow-sm hover:shadow-md transition-shadow z-20 flex flex-col justify-center px-3 overflow-hidden">
-                                    <div className="text-sm font-bold text-[#1c2541] truncate text-center">{acc.title}</div>
-                                </div>
-                            );
-                        }
-
-                        if (isCheckIn) {
-                            return (
-                                <div key={acc.id} onClick={() => onEditBlock(acc)} style={{ top: trackIndex * 88 }} className="absolute right-[-24px] left-[52%] h-[76px] bg-white border-y border-gray-200 border-l-[4px] border-l-[#8b5cf6] border-r-0 rounded-l-xl cursor-pointer hover:bg-gray-50 transition-colors z-20 flex flex-col justify-center pl-3 pr-6 overflow-hidden">
-                                    <div className="flex items-center gap-1.5 mb-1">
-                                        <Bed size={14} className="text-[#8b5cf6] shrink-0" />
-                                        <span className="text-sm font-bold text-[#1c2541] truncate">{acc.title}</span>
-                                    </div>
-                                    <div className="flex flex-wrap items-center justify-between text-xs">
-                                        <span className="text-gray-500 font-medium whitespace-nowrap">{acc.startTime || '16:00'}</span>
-                                        {acc.costInBaseCurrency > 0 && (
-                                            <span className="font-semibold text-[#8b5cf6] ml-2">¥{acc.costInBaseCurrency.toLocaleString()}</span>
-                                        )}
-                                    </div>
-                                </div>
-                            );
-                        }
-
-                        if (isCheckOut) {
-                            return (
-                                <div key={acc.id} onClick={() => onEditBlock(acc)} style={{ top: trackIndex * 88 }} className="absolute left-[-24px] right-[52%] h-[76px] bg-white border-y border-gray-200 border-r border-r-gray-200 border-l-0 rounded-r-xl cursor-pointer hover:bg-gray-50 transition-colors z-20 flex flex-col items-center justify-center px-2 overflow-hidden">
-                                    <div className="text-[10px] text-[#8b5cf6] font-bold mb-0.5 uppercase tracking-widest">OUT</div>
-                                    <div className="text-xs text-gray-500 font-medium truncate">{acc.endTime || '10:00'}</div>
-                                </div>
-                            );
-                        }
-
-                        if (isMiddle) {
-                            return (
-                                <div key={acc.id} onClick={() => onEditBlock(acc)} style={{ top: trackIndex * 88 }} className="absolute left-[-24px] right-[-24px] h-[76px] bg-white border-y border-gray-200 border-x-0 cursor-pointer hover:bg-gray-50 transition-colors z-10 flex flex-col justify-center px-4 overflow-hidden">
-                                    <div className="text-center text-[#8b5cf6]/30 font-bold tracking-widest uppercase text-xs truncate">
-                                        {acc.title}
-                                    </div>
-                                </div>
-                            );
-                        }
-
-                        return null;
+                        return (
+                            <AccommodationSegment
+                                key={`${acc.id}-${dayId}`}
+                                acc={acc}
+                                trackIndex={trackIndex}
+                                isCheckIn={isCheckIn}
+                                isCheckOut={isCheckOut}
+                                isMiddle={isMiddle}
+                                dayId={dayId}
+                                onEditBlock={onEditBlock}
+                            />
+                        );
                     })}
                 </div>
             )}

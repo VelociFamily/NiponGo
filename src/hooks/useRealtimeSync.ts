@@ -25,6 +25,8 @@ interface DbBlock {
     google_maps_url: string | null;
     phone_number: string | null;
     website_url: string | null;
+    has_kids_price: boolean;
+    kids_cost_in_base_currency: number | null;
 }
 
 interface DbFlight {
@@ -51,6 +53,8 @@ interface DbTrip {
     start_date: string;
     end_date: string;
     exchange_rate: number;
+    adults: number;
+    children: number;
 }
 
 function dbBlockToBlock(row: DbBlock): ItineraryBlock {
@@ -59,7 +63,7 @@ function dbBlockToBlock(row: DbBlock): ItineraryBlock {
         dayId: row.day_id,
         type: row.type as ItineraryBlock['type'],
         title: row.title,
-        details: row.details,
+        details: row.details || '',
         costInBaseCurrency: Number(row.cost_in_base_currency),
         startTime: row.start_time ?? undefined,
         endTime: row.end_time ?? undefined,
@@ -70,6 +74,8 @@ function dbBlockToBlock(row: DbBlock): ItineraryBlock {
         googleMapsUrl: row.google_maps_url ?? undefined,
         phoneNumber: row.phone_number ?? undefined,
         websiteUrl: row.website_url ?? undefined,
+        hasKidsPrice: row.has_kids_price,
+        kidsCostInBaseCurrency: row.kids_cost_in_base_currency !== null ? Number(row.kids_cost_in_base_currency) : undefined,
     };
 }
 
@@ -97,6 +103,8 @@ function dbTripToConfig(row: DbTrip): TripConfig {
         startDate: row.start_date,
         endDate: row.end_date,
         exchangeRate: Number(row.exchange_rate),
+        adults: row.adults,
+        children: row.children,
     };
 }
 

@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { v4 as uuidv4 } from 'uuid';
 import { generatePnr } from '../lib/pnr';
 import * as tripService from '../services/tripService';
+import { saveRecentTrip } from '../lib/cookies';
 
 export type BlockCategory = 'Accommodation' | 'Transportation' | 'Food' | 'Activity';
 export type MealType = 'Breakfast' | 'Morning Snack' | 'Lunch' | 'Afternoon Snack' | 'Dinner';
@@ -23,6 +24,8 @@ export interface ItineraryBlock {
     googleMapsUrl?: string;
     phoneNumber?: string;
     websiteUrl?: string;
+    hasKidsPrice?: boolean;
+    kidsCostInBaseCurrency?: number;
 }
 
 export interface TripConfig {
@@ -30,6 +33,8 @@ export interface TripConfig {
     startDate: string; // 'YYYY-MM-DD'
     endDate: string; // 'YYYY-MM-DD'
     exchangeRate: number; // e.g., 1 USD to 150 JPY
+    adults: number;
+    children: number;
 }
 
 export interface ReturnFlightDetails {
@@ -106,6 +111,10 @@ interface TripState {
     blocks: ItineraryBlock[];
     flights: Flight[];
 
+    // Display settings
+    displayCurrency: 'USD' | 'JPY';
+    setDisplayCurrency: (currency: 'USD' | 'JPY') => void;
+
     // Trip lifecycle
     createTrip: (config: TripConfig) => Promise<void>;
     loadTrip: (pnr: string) => Promise<void>;
@@ -165,6 +174,16 @@ export const useTripStore = create<TripState>()((set, get) => ({
     config: null,
     blocks: [],
     flights: [],
+    displayCurrency: (localStorage.getItem('nipongo-display-currency') as 'USD' | 'JPY') || 'JPY',
+
+    setDisplayCurrency: (currency) => {
+        try {
+            localStorage.setItem('nipongo-display-currency', currency);
+        } catch {
+            // Ignore if localStorage is disabled/unavailable
+        }
+        set({ displayCurrency: currency });
+    },
 
     // ---- Trip Lifecycle ----
 
@@ -174,6 +193,7 @@ export const useTripStore = create<TripState>()((set, get) => ({
             const pnr = await generatePnr();
             const result = await tripService.createTrip(config, pnr);
             saveLastPnr(pnr);
+            saveRecentTrip(pnr, config.name);
             set({
                 tripId: result.id,
                 currentPnr: pnr,
@@ -202,6 +222,7 @@ export const useTripStore = create<TripState>()((set, get) => ({
                 return;
             }
             saveLastPnr(pnr);
+            saveRecentTrip(pnr, result.config.name);
             set({
                 tripId: result.tripId,
                 currentPnr: result.pnrCode,
@@ -249,6 +270,7 @@ export const useTripStore = create<TripState>()((set, get) => ({
         // Async Supabase write
         tripService.updateTripConfig(tripId, config).then(() => {
             markAsRecentlyWritten(tripId);
+            saveRecentTrip(currentPnr, config.name);
         }).catch((err) => {
             set({
                 connectionError: `Failed to save config: ${err instanceof Error ? err.message : 'Unknown error'}`,

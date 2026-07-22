@@ -93,7 +93,8 @@ const ItineraryView: React.FC = () => {
 
     const handleDragStart = (event: DragStartEvent) => {
         const { active } = event;
-        const block = blocks.find((b) => b.id === active.id);
+        const blockId = active.data.current?.block?.id || String(active.id);
+        const block = blocks.find((b) => b.id === blockId);
         if (block) setActiveBlock(block);
     };
 
@@ -104,7 +105,7 @@ const ItineraryView: React.FC = () => {
         // Ignore trash here, handle in DragEnd
         if (over.id === 'trash-zone') return;
 
-        const activeId = String(active.id);
+        const activeId = active.data.current?.block?.id || String(active.id);
         const overId = String(over.id);
 
         const currentBlocks = useTripStore.getState().blocks;
@@ -142,11 +143,12 @@ const ItineraryView: React.FC = () => {
         if (!over) return;
 
         if (over.id === 'trash-zone') {
-            useTripStore.getState().deleteBlock(String(active.id));
+            const blockId = active.data.current?.block?.id || String(active.id);
+            useTripStore.getState().deleteBlock(blockId);
             return;
         }
 
-        const activeId = String(active.id);
+        const activeId = active.data.current?.block?.id || String(active.id);
         const overId = String(over.id);
 
         if (activeId !== overId) {
