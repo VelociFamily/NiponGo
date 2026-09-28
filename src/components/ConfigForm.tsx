@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTripStore, type TripConfig } from '../store/useTripStore';
-import { Copy, Check } from 'lucide-react';
+import { Copy, Check, Share2 } from 'lucide-react';
+import { getTripShareUrl, shareTrip } from '../lib/url';
 
 const ConfigForm: React.FC = () => {
     const { config, currentPnr, tripId, setConfig } = useTripStore();
@@ -13,6 +14,7 @@ const ConfigForm: React.FC = () => {
         children: 0,
     });
     const [pnrCopied, setPnrCopied] = useState(false);
+    const [linkCopied, setLinkCopied] = useState(false);
 
     useEffect(() => {
         if (config) {
@@ -50,6 +52,15 @@ const ConfigForm: React.FC = () => {
         }
     };
 
+    const handleShareTrip = async () => {
+        if (!currentPnr) return;
+        const result = await shareTrip(currentPnr, formData.name);
+        if (result === 'copied') {
+            setLinkCopied(true);
+            setTimeout(() => setLinkCopied(false), 2000);
+        }
+    };
+
     return (
         <div className="max-w-2xl mx-auto mt-10 p-8 bg-white/90 backdrop-blur-sm rounded-xl shadow-sm border border-gray-100">
             <div className="text-center mb-8">
@@ -60,14 +71,15 @@ const ConfigForm: React.FC = () => {
             {/* PNR Share Card — shown after trip is created */}
             {currentPnr && tripId && (
                 <div className="mb-8 bg-[#8a9a5b]/10 border border-[#8a9a5b]/20 rounded-xl p-5">
-                    <p className="text-sm font-medium text-[#1c2541] mb-2">Share this code with your family:</p>
+                    <p className="text-sm font-medium text-[#1c2541] mb-2 text-center">Share this trip with your family:</p>
                     <div className="flex items-center justify-center gap-3">
                         <span className="font-mono text-3xl font-bold text-[#1c2541] tracking-[0.4em]">
                             {currentPnr}
                         </span>
                         <button
+                            type="button"
                             onClick={handleCopyPnr}
-                            className="p-2 rounded-lg hover:bg-[#8a9a5b]/20 transition-colors"
+                            className="p-2 rounded-lg hover:bg-[#8a9a5b]/20 transition-colors cursor-pointer"
                             title="Copy trip code"
                         >
                             {pnrCopied ? (
@@ -77,8 +89,32 @@ const ConfigForm: React.FC = () => {
                             )}
                         </button>
                     </div>
-                    <p className="text-xs text-[#6b7280] text-center mt-2">
-                        Anyone with this code can view and edit the trip.
+
+                    <div className="mt-4 pt-3 border-t border-[#8a9a5b]/20 flex flex-col sm:flex-row items-center justify-between gap-2 bg-white/70 p-2.5 rounded-lg">
+                        <span className="text-xs font-mono text-[#1c2541] truncate max-w-full sm:max-w-xs">
+                            {getTripShareUrl(currentPnr)}
+                        </span>
+                        <button
+                            type="button"
+                            onClick={handleShareTrip}
+                            className="px-3 py-1.5 bg-[#8a9a5b] hover:bg-[#728247] text-white text-xs font-semibold rounded-lg flex items-center gap-1.5 shrink-0 transition-colors shadow-xs cursor-pointer"
+                        >
+                            {linkCopied ? (
+                                <>
+                                    <Check size={14} />
+                                    <span>Link Copied!</span>
+                                </>
+                            ) : (
+                                <>
+                                    <Share2 size={14} />
+                                    <span>Share Link</span>
+                                </>
+                            )}
+                        </button>
+                    </div>
+
+                    <p className="text-xs text-[#6b7280] text-center mt-3">
+                        Anyone with this link or code can view and edit the trip in real-time.
                     </p>
                 </div>
             )}

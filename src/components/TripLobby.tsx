@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTripStore, getLastPnr } from '../store/useTripStore';
 import { normalizePnr } from '../lib/pnr';
+import { getTripCodeFromUrl, syncTripUrl } from '../lib/url';
 import { Plane, Plus, LogIn, AlertCircle, Loader2, X } from 'lucide-react';
 import { getRecentTrips, removeRecentTrip, type RecentTrip } from '../lib/cookies';
 
@@ -11,23 +12,34 @@ interface TripLobbyProps {
 const TripLobby: React.FC<TripLobbyProps> = ({ onCreateNew }) => {
     const { loadTrip, isLoading, connectionError, clearError } = useTripStore();
     const [pnrInput, setPnrInput] = useState('');
-    const [validationError, setValidationError] = useState<string | null>(null);
+    const [urlInfo] = useState(() => getTripCodeFromUrl());
+    const [validationError, setValidationError] = useState<string | null>(() =>
+        urlInfo.isInvalid ? `Invalid trip code "${urlInfo.raw}" in link. Please check the code.` : null
+    );
     const [lastPnr] = useState<string | null>(() => getLastPnr());
+    const targetPnr = urlInfo.code || lastPnr;
     const [autoLoadAttempted, setAutoLoadAttempted] = useState(false);
-    const [recentTrips, setRecentTrips] = useState<RecentTrip[]>([]);
+    const [recentTrips, setRecentTrips] = useState<RecentTrip[]>(() => getRecentTrips());
 
-    // Load recent trips on mount
+    // Auto-load trip: URL takes precedence, then last used trip
     useEffect(() => {
-        setRecentTrips(getRecentTrips());
-    }, []);
-
-    // Auto-load last used trip
-    useEffect(() => {
-        if (lastPnr && !autoLoadAttempted) {
-            setAutoLoadAttempted(true);
-            loadTrip(lastPnr);
+        if (urlInfo.isInvalid) {
+            syncTripUrl(null);
+            return;
         }
-    }, [lastPnr, autoLoadAttempted, loadTrip]);
+
+        if (targetPnr && !autoLoadAttempted) {
+            setAutoLoadAttempted(true);
+            loadTrip(targetPnr);
+        }
+    }, [targetPnr, autoLoadAttempted, loadTrip, urlInfo]);
+
+    // Clean URL if loading a trip from URL failed
+    useEffect(() => {
+        if (connectionError && urlInfo.code) {
+            syncTripUrl(null);
+        }
+    }, [connectionError, urlInfo.code]);
 
     const handleJoin = (e: React.FormEvent) => {
         e.preventDefault();
@@ -56,12 +68,12 @@ const TripLobby: React.FC<TripLobbyProps> = ({ onCreateNew }) => {
     };
 
     // While auto-loading, show a clean loading state
-    if (isLoading && lastPnr && !connectionError) {
+    if (isLoading && targetPnr && !connectionError) {
         return (
             <div className="min-h-screen bg-seigaiha bg-[#f5f5f3] flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="w-10 h-10 text-[#8a9a5b] animate-spin mx-auto mb-4" />
-                    <p className="text-[#6b7280] text-lg">Loading trip <span className="font-mono font-bold text-[#1c2541]">{lastPnr}</span>...</p>
+                    <p className="text-[#6b7280] text-lg">Loading trip <span className="font-mono font-bold text-[#1c2541]">{targetPnr}</span>...</p>
                 </div>
             </div>
         );

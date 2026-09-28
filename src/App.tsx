@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useTripStore } from './store/useTripStore';
 import { useRealtimeSync } from './hooks/useRealtimeSync';
-import { Settings, Map, Wallet, Printer, Plane, Copy, Check, LogOut, AlertCircle, X } from 'lucide-react';
+import { Settings, Map, Wallet, Printer, Plane, Copy, Check, LogOut, AlertCircle, X, Share2 } from 'lucide-react';
+import { syncTripUrl, shareTrip, getTripCodeFromUrl } from './lib/url';
 
 import TripLobby from './components/TripLobby';
 import ConfigForm from './components/ConfigForm';
@@ -19,13 +20,34 @@ function App() {
   const connectionError = useTripStore((state) => state.connectionError);
   const clearError = useTripStore((state) => state.clearError);
   const leaveTrip = useTripStore((state) => state.leaveTrip);
+  const loadTrip = useTripStore((state) => state.loadTrip);
 
   const [activeTab, setActiveTab] = useState<Tab>('config');
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [pnrCopied, setPnrCopied] = useState(false);
+  const [linkCopied, setLinkCopied] = useState(false);
 
   // Activate real-time sync when a trip is loaded
   useRealtimeSync();
+
+  // Keep URL search parameter in sync with active trip
+  useEffect(() => {
+    syncTripUrl(currentPnr);
+  }, [currentPnr]);
+
+  // Handle browser back / forward navigation
+  useEffect(() => {
+    const handlePopState = () => {
+      const { code } = getTripCodeFromUrl();
+      if (code && code !== currentPnr) {
+        loadTrip(code);
+      } else if (!code && currentPnr) {
+        leaveTrip();
+      }
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [currentPnr, loadTrip, leaveTrip]);
 
   // If there's no config (first load or cleared), force the config tab
   useEffect(() => {
@@ -52,9 +74,19 @@ function App() {
     }
   };
 
+  const handleShareTrip = async () => {
+    if (!currentPnr) return;
+    const result = await shareTrip(currentPnr, config?.name);
+    if (result === 'copied') {
+      setLinkCopied(true);
+      setTimeout(() => setLinkCopied(false), 2000);
+    }
+  };
+
   const handleLeaveTrip = () => {
     setShowCreateForm(false);
     leaveTrip();
+    syncTripUrl(null, 'push');
   };
 
   // ---- No trip loaded: show lobby or create form ----
@@ -138,11 +170,32 @@ function App() {
             </div>
 
             <div className="flex items-center gap-2 sm:gap-4">
-              {/* PNR Badge */}
+              {/* Share Trip Link Button */}
+              {currentPnr && (
+                <button
+                  onClick={handleShareTrip}
+                  className="flex items-center gap-1.5 px-3 py-1.5 bg-[#8a9a5b] hover:bg-[#728247] text-white rounded-lg transition-colors text-xs font-semibold shadow-xs cursor-pointer"
+                  title="Share trip link with family"
+                >
+                  {linkCopied ? (
+                    <>
+                      <Check size={14} className="text-white" />
+                      <span>Link Copied!</span>
+                    </>
+                  ) : (
+                    <>
+                      <Share2 size={14} />
+                      <span className="hidden xs:inline">Share Trip</span>
+                    </>
+                  )}
+                </button>
+              )}
+
+              {/* PNR Code Badge */}
               {currentPnr && (
                 <button
                   onClick={handleCopyPnr}
-                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#1c2541]/5 hover:bg-[#1c2541]/10 rounded-lg transition-colors group"
+                  className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 bg-[#1c2541]/5 hover:bg-[#1c2541]/10 rounded-lg transition-colors group cursor-pointer"
                   title="Click to copy trip code"
                 >
                   <span className="text-xs text-[#6b7280] font-medium">Trip Code:</span>
