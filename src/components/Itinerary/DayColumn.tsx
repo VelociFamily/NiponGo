@@ -112,9 +112,9 @@ const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, fl
     const containerHeight = maxTrack >= 0 ? (maxTrack + 1) * 88 : 0;
 
     return (
-        <div className="flex flex-col min-w-[280px] w-[320px] shrink-0">
-            <div className="flex-1 bg-[#f5f5f3]/50 rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col min-h-[150px] print:shadow-none print:border-none print:bg-transparent print:p-0 relative z-10">
-                <div className="flex justify-between items-center mb-4 px-2 print:mb-2">
+        <div className="flex flex-col min-w-[280px] w-[320px] shrink-0 h-full">
+            <div className="flex-1 min-h-0 bg-[#f5f5f3]/50 rounded-xl p-3 border border-gray-200 shadow-sm flex flex-col print:shadow-none print:border-none print:bg-transparent print:p-0 relative z-10">
+                <div className="flex justify-between items-center mb-3 px-2 print:mb-2 shrink-0">
                     <div>
                         <h3 className="font-bold text-[#1c2541] font-serif">{dateStr}</h3>
                         <p className="text-xs text-[#8a9a5b] font-medium">Day View</p>
@@ -130,7 +130,7 @@ const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, fl
 
                 <div
                     ref={setNodeRef}
-                    className="flex-1 flex flex-col gap-3 min-h-[150px]"
+                    className="flex-1 min-h-0 flex flex-col gap-3 overflow-y-auto pr-1 custom-scrollbar"
                 >
                     {flights && flights.map(flight => (
                         <FlightCard key={`flight-${flight.id}`} flight={flight} />
@@ -151,7 +151,7 @@ const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, fl
                     </SortableContext>
 
                     {bottomFlights && bottomFlights.length > 0 && (
-                        <div className="mt-auto flex flex-col gap-3">
+                        <div className="mt-auto flex flex-col gap-3 shrink-0">
                             {bottomFlights.map(flight => (
                                 <FlightCard key={`flight-bottom-${flight.id}`} flight={flight} />
                             ))}
@@ -167,7 +167,7 @@ const DayColumn: React.FC<Props> = ({ dayId, dateStr, blocks, accommodations, fl
             </div>
 
             {accommodations && accommodations.length > 0 && (
-                <div style={{ height: containerHeight }} className="mt-4 w-full relative print:hidden shrink-0">
+                <div style={{ height: containerHeight }} className="mt-3 w-full relative print:hidden shrink-0">
                     {accommodations.map(acc => {
                         const trackIndex = acc._trackIndex || 0;
                         const isCheckIn = acc.dayId === dayId;

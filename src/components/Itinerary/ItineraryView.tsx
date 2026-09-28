@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useTripStore, type ItineraryBlock } from '../../store/useTripStore';
 import { eachDayOfInterval, parseISO, format, subDays } from 'date-fns';
 import {
@@ -204,9 +204,40 @@ const ItineraryView: React.FC = () => {
         }),
     };
 
+    const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+    const handleWheel = (e: React.WheelEvent<HTMLDivElement>) => {
+        // If native horizontal scrolling (trackpad swipe or Shift+Wheel), let the browser handle it
+        if (Math.abs(e.deltaX) > Math.abs(e.deltaY)) return;
+
+        // If hovering inside a child element that can scroll vertically in the wheel direction, allow that to scroll
+        let el = e.target as HTMLElement | null;
+        while (el && el !== scrollContainerRef.current) {
+            const style = window.getComputedStyle(el);
+            const isScrollable = (style.overflowY === 'auto' || style.overflowY === 'scroll') && el.scrollHeight > el.clientHeight;
+            if (isScrollable) {
+                const canScrollDown = e.deltaY > 0 && el.scrollTop + el.clientHeight < el.scrollHeight - 1;
+                const canScrollUp = e.deltaY < 0 && el.scrollTop > 1;
+                if (canScrollDown || canScrollUp) {
+                    return;
+                }
+            }
+            el = el.parentElement;
+        }
+
+        // Map vertical wheel scroll to horizontal scrolling of the itinerary board
+        if (scrollContainerRef.current) {
+            scrollContainerRef.current.scrollLeft += e.deltaY;
+        }
+    };
+
     return (
-        <div className="h-[calc(100vh-8rem)] flex flex-col print:h-auto">
-            <div className="flex-1 overflow-x-auto overflow-y-hidden pb-6 custom-scrollbar print:overflow-visible">
+        <div className="flex-1 min-h-0 flex flex-col print:h-auto">
+            <div
+                ref={scrollContainerRef}
+                onWheel={handleWheel}
+                className="flex-1 min-h-0 overflow-x-auto overflow-y-hidden pb-3 custom-scrollbar print:overflow-visible"
+            >
                     <DndContext
                         sensors={sensors}
                         collisionDetection={closestCenter}

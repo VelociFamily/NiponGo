@@ -113,10 +113,10 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-seigaiha text-[#2c2c2c] bg-[#f5f5f3]">
+    <div className="h-screen flex flex-col bg-seigaiha text-[#2c2c2c] bg-[#f5f5f3] overflow-hidden print:h-auto print:overflow-visible">
       {/* Connection Error Banner */}
       {connectionError && (
-        <div className="bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between print:hidden">
+        <div className="shrink-0 bg-red-50 border-b border-red-200 px-4 py-2 flex items-center justify-between print:hidden">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 text-red-500 shrink-0" />
             <p className="text-sm text-red-700">{connectionError}</p>
@@ -127,7 +127,7 @@ function App() {
         </div>
       )}
 
-      <header className="bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 sticky top-0 z-50 print:hidden">
+      <header className="shrink-0 bg-white/80 backdrop-blur-md shadow-sm border-b border-gray-200 z-50 print:hidden">
         <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center gap-2">
@@ -222,7 +222,13 @@ function App() {
         </div>
       </header>
 
-      <main className="w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main
+        className={`w-full mx-auto px-4 sm:px-6 lg:px-8 flex-1 min-h-0 print:h-auto print:overflow-visible ${
+          activeTab === 'itinerary'
+            ? 'pt-4 pb-2 flex flex-col overflow-hidden'
+            : 'py-8 overflow-y-auto'
+        }`}
+      >
         {renderContent()}
       </main>
     </div>
